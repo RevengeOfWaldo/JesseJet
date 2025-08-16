@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Aircraft Wind Limit Calculator</title>
+<style>
+body {
+font-family: Arial, sans-serif;
+margin: 20px;
+background-color: #f4f4f9;
+color: #333;
+}
+h2 {
+color: #004085;
+text-align: center;
+}
+.container {
+max-width: 500px;
+margin: auto;
+background: white;
+padding: 20px;
+border-radius: 10px;
+box-shadow: 0px 4px 8px rgba(0,0,0,0.1);
+}
+label {
+display: block;
+margin-top: 10px;
+font-weight: bold;
+}
+input, select {
+padding: 8px;
+width: 100%;
+margin-top: 5px;
+border: 1px solid #ccc;
+border-radius: 5px;
+box-sizing: border-box;
+}
+button {
+margin-top: 15px;
+padding: 10px;
+width: 100%;
+background-color: #007bff;
+color: white;
+border: none;
+border-radius: 5px;
+cursor: pointer;
+font-size: 16px;
+}
+button:hover {
+background-color: #0056b3;
+}
+.result {
+margin-top: 20px;
+padding: 15px;
+border-radius: 5px;
+font-weight: bold;
+text-align: left;
+font-size: 16px;
+line-height: 1.6;
+}
+.pass {
+background-color: #d4edda;
+color: #155724;
+border: 1px solid #c3e6cb;
+}
+.fail {
+background-color: #f8d7da;
+color: #721c24;
+border: 1px solid #f5c6cb;
+}
+</style>
+</head>
+<body>
+
+<h2>Aircraft Wind Limit Calculator</h2>
+<div class="container">
+<label>Steady Wind Speed (kts):</label>
+<input type="number" id="windSpeed" value="25">
+
+<label>Gusts Present?</label>
+<select id="gustPresent">
+<option value="no">No</option>
+<option value="yes">Yes</option>
+</select>
+
+<label>Wind Direction (° from North):</label>
+<input type="number" id="windDirection" value="180">
+
+<label>Aircraft Heading (° from North):</label>
+<input type="number" id="aircraftHeading" value="90">
+
+<label>N1 Setting (%):</label>
+<input type="number" id="n1Speed" value="65">
+
+<button type="button" onclick="calculate()">Check Limits</button>
+
+<div id="output" class="result"></div>
+</div>
+
+<script>
+function calculateRelativeAngle(windDir, aircraftHeading) {
+let angle = Math.abs(windDir - aircraftHeading);
+if (angle > 180) {
+angle = 360 - angle;
+}
+return angle;
+}
+
+function windLimitCheck(windSpeed, gustPresent, relativeAngle, n1Speed) {
+let gustAdjustment = gustPresent === "yes" ? 5 : 0;
+let adjustedSpeed = windSpeed;
+let limit;
+
+if (n1Speed <= 70) {
+if (relativeAngle === 0) {
+limit = 40;
+} else if (relativeAngle === 180) {
+limit = 20;
+} else if (relativeAngle === 150 || relativeAngle === 210) {
+limit = 23;
+} else if (relativeAngle === 135 || relativeAngle === 225) {
+limit = 28;
+} else if (relativeAngle >= 120 && relativeAngle <= 240) {
+limit = 20; 
+} else {
+limit = 40;
+}
+} else {
+if (relativeAngle === 0) {
+limit = 30;
+} else if (relativeAngle === 180) {
+limit = 5;
+} else if (relativeAngle === 90 || relativeAngle === 270) {
+limit = 10;
+} else if (relativeAngle === 45 || relativeAngle === 315) {
+limit = 20;
+} else if (relativeAngle >= 120 && relativeAngle <= 240) {
+limit = 5; 
+} else if ((relativeAngle >= 90 && relativeAngle < 120) || (relativeAngle > 240 && relativeAngle <= 270)) {
+limit = 10;
+} else if ((relativeAngle >= 45 && relativeAngle < 90) || (relativeAngle > 270 && relativeAngle <= 315)) {
+limit = 20;
+} else {
+limit = 30;
+}
+}
+
+limit -= gustAdjustment;
+
+return {
+adjustedWindSpeed: adjustedSpeed,
+limit: limit,
+withinLimits: adjustedSpeed <= limit
+};
+}
+
+function calculateWindComponents(windSpeed, windDir, aircraftHeading, relativeAngle) {
+let angleRad = relativeAngle * Math.PI / 180;
+let headwind = windSpeed * Math.cos(angleRad);
+let crosswind = windSpeed * Math.sin(angleRad);
+
+let tailwind = 0;
+if (headwind < 0) {
+tailwind = Math.abs(headwind);
+headwind = 0;
+}
+
+// Determine left/right crosswind
+let diff = (windDir - aircraftHeading + 360) % 360;
+let crossDir = (diff > 180) ? "Left" : "Right";
+
+return {
+headwind: headwind.toFixed(1),
+tailwind: tailwind.toFixed(1),
+crosswind: crosswind.toFixed(1),
+crossDir: crossDir
+};
+}
+
+function calculate() {
+let windSpeed = parseFloat(document.getElementById("windSpeed").value) || 0;
+let gustPresent = document.getElementById("gustPresent").value;
+let windDirection = parseFloat(document.getElementById("windDirection").value) || 0;
+let aircraftHeading = parseFloat(document.getElementById("aircraftHeading").value) || 0;
+let n1Speed = parseFloat(document.getElementById("n1Speed").value) || 0;
+
+let relativeAngle = calculateRelativeAngle(windDirection, aircraftHeading);
+let result = windLimitCheck(windSpeed, gustPresent, relativeAngle, n1Speed);
+let components = calculateWindComponents(windSpeed, windDirection, aircraftHeading, relativeAngle);
+
+let output = document.getElementById("output");
+
+let details = `
+Steady Wind: ${windSpeed} kts<br>
+Gusts Present: ${gustPresent}<br>
+Wind Direction: ${windDirection}°<br>
+Aircraft Heading: ${aircraftHeading}°<br>
+Relative Wind Angle: ${relativeAngle}°<br>
+Headwind: ${components.headwind} kts<br>
+Tailwind: ${components.tailwind} kts<br>
+Crosswind: ${components.crosswind} kts (${components.crossDir})<br>
+Limit: ${result.limit} kts
+`;
+
+if (result.withinLimits) {
+output.className = "result pass";
+output.innerHTML = `✅ WITHIN LIMITS<br>${details}`;
+} else {
+output.className = "result fail";
+output.innerHTML = `❌ EXCEEDS LIMITS<br>${details}`;
+}
+}
+</script>
+
+</body>
+</html>
