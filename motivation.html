@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">  
+<title>NO MOTIVATION ALLOWED</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root { --accent:#2d8cff; --bg:#f4f7fb; --ink:#1f2a3a; --card:#fff; --muted:#6b7c93; --red:#e74c3c; }
+html,body { height:100%; }
+body {
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    margin:0; padding:24px; background:var(--bg); color:var(--ink);
+    text-align: center;
+}
+.wrap { max-width: 860px; margin: 0 auto; }
+h1 { font-size: 28px; text-align:center; margin: 6px 0 18px; color: var(--red); }
+.card {
+    background:var(--card);
+    border-radius:14px;
+    padding:18px;
+    box-shadow:0 10px 24px rgba(30,60,90,.08);
+}
+.btn {
+    display:inline-block; width:100%; margin-top:16px;
+    padding:12px 14px; border:0; border-radius:10px;
+    font-size:16px; cursor:pointer;
+}
+.primary { background:var(--accent); color:#fff; }
+.secondary { background:#eef3ff; color:#113; }
+.red { background:var(--red); color:#fff; }
+
+/* Navigation buttons styling */
+.top-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+.top-buttons .btn {
+    width: 32%;
+    margin-top: 0;
+}
+
+.gif-container {
+    margin: 20px auto;
+    max-width: 500px;
+}
+
+.gif-container img {
+    width: 100%;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.motivation-quote {
+    font-size: 20px;
+    font-style: italic;
+    margin: 20px 0;
+    color: var(--red);
+    text-decoration: line-through;
+}
+
+.funny-text {
+    font-size: 16px;
+    line-height: 1.6;
+    margin: 20px 0;
+}
+
+.alarm {
+    animation: flash 1s infinite;
+    font-weight: bold;
+    font-size: 22px;
+    margin: 30px 0;
+}
+
+@keyframes flash {
+    0% { color: var(--red); }
+    50% { color: var(--ink); }
+    100% { color: var(--red); }
+}
+
+.counter {
+    font-size: 14px;
+    color: var(--muted);
+    margin-top: 30px;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>⚠️ MOTIVATION DETECTED ⚠️</h1>
+<div class="card">
+    <!-- Three navigation buttons at the top -->
+    <div class="top-buttons">
+        <button class="btn secondary" onclick="window.location.href='index.html'">WIND LIMITS</button>
+        <button class="btn secondary" onclick="window.location.href='TRT.html'">TRT</button>
+        <button class="btn red" onclick="incrementCounter()">MOTIVATION</button>
+    </div>
+
+    <div class="alarm">MOTIVATION IS STRICTLY PROHIBITED</div>
+    
+    <div class="gif-container">
+        <img src="https://media.giphy.com/media/TqiwHbFBaZ4ti/giphy.gif" alt="No motivation allowed">
+    </div>
+    
+    <div class="motivation-quote">"Believe in yourself and all that you are. Know that there is something inside you that is greater than any obstacle."</div>
+    
+    <div class="funny-text">
+        <p>We've detected that you clicked on "MOTIVATION". This is a serious violation of aviation protocol.</p>
+        <p>As per FAA Regulation 42.5.11: "No pilot shall seek motivation, inspiration, or positive reinforcement while performing calculations."</p>
+        <p>Motivation leads to enthusiasm, which leads to confidence, which leads to happiness, which leads to distraction from important calculations!</p>
+        <p>Please return to cold, hard, emotionless math immediately.</p>
+    </div>
+    
+    <button class="btn primary" onclick="window.location.href='index.html'">I UNDERSTAND. TAKE ME BACK TO CALCULATIONS</button>
+    
+    <p class="counter">Number of motivation violations: <span id="violation-counter">1</span></p>
+</div>
+</div>
+
+<script>
+function incrementCounter() {
+    let counter = document.getElementById('violation-counter');
+    let count = parseInt(counter.textContent);
+    counter.textContent = count + 1;
+    
+    if (count + 1 >= 5) {
+        alert("EXCESSIVE MOTIVATION DETECTED! Your device will self-destruct in 3... 2... 1... Just kidding, but seriously, stick to calculations.");
+    }
+}
+
+// Random demotivational messages
+const demotivationalMessages = [
+    "Remember, the sky isn't the limit when there's a 200 ft ceiling.",
+    "It's just another Monday in the flight deck.",
+    "The best view is from the ground. Safely. With coffee.",
+    "Why fly when you can calculate?",
+    "Dreams are for sleeping, not for doing."
+];
+
+// Display a random demotivational message
+window.onload = function() {
+    const funnyText = document.querySelector('.funny-text');
+    const randomMessage = demotivationalMessages[Math.floor(Math.random() * demotivationalMessages.length)];
+    funnyText.innerHTML += `<p><strong>Today's Demotivational Message:</strong> "${randomMessage}"</p>`;
+};
+</script>
+</body>
+</html>
