@@ -1,0 +1,208 @@
+<!doctype html>  
+<html>  
+<head>  
+<meta charset="utf-8">  
+<title>TRT Calculator — Tampa Bay (Digitized & Rounded)</title>  
+<meta name="viewport" content="width=device-width, initial-scale=1">  
+<style>  
+:root { --accent:#2d8cff; --bg:#f4f7fb; --ink:#1f2a3a; --card:#fff; --muted:#6b7c93; }  
+html,body { height:100%; }  
+body {  
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;  
+    margin:0; padding:24px; background:var(--bg); color:var(--ink);  
+}  
+.wrap { max-width: 860px; margin: 0 auto; }  
+h1 { font-size: 22px; text-align:center; margin: 6px 0 18px; }  
+.card {  
+    background:var(--card);  
+    border-radius:14px;  
+    padding:18px;  
+    box-shadow:0 10px 24px rgba(30,60,90,.08);  
+}  
+label { display:block; font-weight:600; margin-top:12px; }  
+input {  
+    width:100%; padding:12px; border:1px solid #d9e1ef;  
+    border-radius:10px; font-size:16px; box-sizing:border-box;  
+}  
+.row { display:grid; grid-template-columns: 1fr 1fr; gap:14px; }  
+.btn {  
+    display:inline-block; width:100%; margin-top:16px;  
+    padding:12px 14px; border:0; border-radius:10px;  
+    font-size:16px; cursor:pointer;  
+}  
+.primary { background:var(--accent); color:#fff; }  
+.secondary { background:#eef3ff; color:#113; }  
+#resultBox {  
+    margin-top:16px; padding:16px; border-radius:12px;  
+    color:#fff; font-size:20px; font-weight:800;  
+    text-align:center; display:none;  
+}  
+.note { color:var(--muted); font-size:13px; text-align:center; margin-top:8px; }  
+.tools { display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }  
+pre {  
+    background:#f6f8fb; border:1px solid #e6ecf5;  
+    padding:10px; border-radius:10px;  
+    max-height:260px; overflow:auto; display:none;  
+}  
+#preview { width:100%; height:340px; display:none; margin-top:10px; }  
+
+/* Navigation buttons styling */
+.top-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+.top-buttons .btn {
+    width: 32%;
+    margin-top: 0;
+}
+</style>  
+</head>  
+<body>  
+<div class="wrap">  
+<h1>TRT (N1%) Calculator — Tampa Bay</h1>  
+<div class="card">
+    <!-- Three navigation buttons at the top -->
+    <div class="top-buttons">
+        <button class="btn secondary" onclick="window.location.href='index.html'">WIND LIMITS</button>
+        <button class="btn primary" onclick="window.location.href='TRT.html'">TRT</button>
+        <button class="btn secondary" onclick="window.location.href='motivation.html'">MOTIVATION</button>
+    </div>
+
+    <div class="row">  
+    <div>  
+    <label for="alt">Pressure Altitude (ft)</label>  
+    <input id="alt" type="number" step="100" value="24000" inputmode="numeric" />  
+    </div>  
+    <div>  
+    <label for="oatF">Outside Air Temperature (°F)</label>  
+    <input id="oatF" type="number" min="32" max="120" step="0.1" value="86" inputmode="decimal" />  
+    </div>  
+    </div>  
+    <button class="btn primary" id="calc">Estimate TRT</button>  
+    <div id="resultBox"></div>  
+    <div class="tools">  
+    <button class="btn secondary" id="btnData">Show Curve Data</button>  
+    <button class="btn secondary" id="btnPreview">Show Curve Preview</button>  
+    </div>  
+    <pre id="dataBlock"></pre>  
+    <canvas id="preview"></canvas>  
+    <p class="note">OAT limited to 32–120 °F for Tampa Bay ops. Results are rounded to whole percent. Data digitized from your chart (approximate).</p>  
+</div>  
+</div>  
+  
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  
+<script>  
+// Digitized anchor data from your chart (approximate)  
+const anchors = {  
+    20000: {32: 91, 40: 90, 60: 88, 80: 86, 100: 84, 120: 82},  
+    22000: {32: 89, 40: 88, 60: 86, 80: 84, 100: 82, 120: 80},  
+    24000: {32: 87, 40: 86, 60: 84, 80: 82, 100: 80, 120: 78},  
+    26000: {32: 85, 40: 84, 60: 82, 80: 80, 100: 78, 120: 76},  
+    28000: {32: 83, 40: 82, 60: 80, 80: 78, 100: 76, 120: 74},  
+    30000: {32: 81, 40: 80, 60: 78, 80: 76, 100: 74, 120: 72},  
+    32000: {32: 79, 40: 78, 60: 76, 80: 74, 100: 72, 120: 70},  
+};  
+  
+const ALT_LIST = Object.keys(anchors).map(Number).sort((a,b)=>a-b);  
+const OAT_KEYS = Object.keys(anchors[ALT_LIST[0]]).map(Number).sort((a,b)=>a-b);  
+  
+function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }  
+  
+// Interpolate TRT along OAT for a single altitude dataset  
+function trtAtOATForAltitude(altFt, oatF){  
+    const table = anchors[altFt];  
+    const keys = Object.keys(table).map(Number).sort((a,b)=>a-b);  
+    if (oatF <= keys[0]) return table[keys[0]];  
+    if (oatF >= keys[keys.length-1]) return table[keys[keys.length-1]];  
+    for(let i=0;i<keys.length-1;i++){  
+        const x1 = keys[i], x2 = keys[i+1];  
+        if (x1 <= oatF && oatF <= x2){  
+            const y1 = table[x1], y2 = table[x2];  
+            const t = (oatF - x1) / (x2 - x1);  
+            return y1*(1-t) + y2*t;  
+        }  
+    }  
+    return null;  
+}  
+  
+// Full interpolation: first OAT within each bounding altitude, then altitude between those TRTs  
+function estimateTRT(altFt, oatF){  
+    const alts = ALT_LIST;  
+    if (altFt <= alts[0]){  
+        return {trt: trtAtOATForAltitude(alts[0], oatF), low: alts[0], high: alts[0]};  
+    }  
+    if (altFt >= alts[alts.length-1]){  
+        return {trt: trtAtOATForAltitude(alts[alts.length-1], oatF), low: alts[alts.length-1], high: alts[alts.length-1]};  
+    }  
+    // find bounding altitudes  
+    let i=0;  
+    while(!(alts[i] <= altFt && altFt <= alts[i+1])) i++;  
+    const a1 = alts[i], a2 = alts[i+1];  
+    const y1 = trtAtOATForAltitude(a1, oatF);  
+    const y2 = trtAtOATForAltitude(a2, oatF);  
+    const t = (altFt - a1) / (a2 - a1);  
+    return {trt: y1*(1-t) + y2*t, low: a1, high: a2};  
+}  
+  
+function colorForTRT(val){  
+    if (val < 75) return '#e74c3c'; // red  
+    if (val < 80) return '#f39c12'; // orange  
+    return '#27ae60'; // green  
+}  
+  
+document.getElementById('calc').addEventListener('click', ()=>{  
+    let alt = Number(document.getElementById('alt').value);  
+    let oatF = Number(document.getElementById('oatF').value);  
+    if (Number.isNaN(alt) || Number.isNaN(oatF)){  
+        alert('Please enter valid numbers for altitude and OAT.');  
+        return;  
+    }  
+    oatF = clamp(oatF, 32, 120);  
+    const {trt, low, high} = estimateTRT(alt, oatF);  
+    const rounded = Math.round(trt);  
+    const box = document.getElementById('resultBox');  
+    const mode = (low===high) ? `Using ${low.toLocaleString()} ft curve` : `Interpolated between ${low.toLocaleString()} and ${high.toLocaleString()} ft`;  
+    box.style.display = 'block';  
+    box.style.background = colorForTRT(rounded);  
+    box.textContent = `Estimated TRT: ${rounded}% — OAT ${oatF.toFixed(1)}°F — ${mode}`;  
+});  
+  
+// Toggle curve data  
+document.getElementById('btnData').addEventListener('click', ()=>{  
+    const pre = document.getElementById('dataBlock');  
+    pre.style.display = (pre.style.display==='block') ? 'none' : 'block';  
+    pre.textContent = JSON.stringify(anchors, null, 2);  
+});  
+  
+// Toggle curve preview  
+let chartRef = null;  
+document.getElementById('btnPreview').addEventListener('click', ()=>{  
+    const canvas = document.getElementById('preview');  
+    const show = (canvas.style.display!=='block');  
+    canvas.style.display = show ? 'block' : 'none';  
+    if (!show) { if (chartRef) { chartRef.destroy(); chartRef = null; } return; }  
+    const ctx = canvas.getContext('2d');  
+    // Build datasets from anchors (OAT°F on X, TRT on Y)  
+    const datasets = ALT_LIST.map((alt, idx)=>{  
+        const pts = OAT_KEYS.map(xF => ({x: xF, y: anchors[alt][xF]}));  
+        const hue = Math.round(360 * idx / ALT_LIST.length);  
+        return { label: alt.toLocaleString() + ' ft', data: pts, borderColor: `hsl(${hue} 70% 45%)`, tension: 0.2, fill: false };  
+    });  
+    chartRef = new Chart(ctx, {  
+        type: 'line',  
+        data: { datasets },  
+        options: {  
+            responsive: true,  
+            maintainAspectRatio: false,  
+            scales: {  
+                x: { type: 'linear', title: { display: true, text: 'OAT (°F)' }, min: 32, max: 120 },  
+                y: { title: { display: true, text: 'TRT (%)' }, min: 68, max: 96 }  
+            },  
+            plugins: { legend: { position: 'bottom' } }  
+        }  
+    });  
+});  
+</script>  
+</body>  
+</html>
