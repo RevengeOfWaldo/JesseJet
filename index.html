@@ -2,6 +2,7 @@
 <html>
 <head>
 <title>Aircraft Wind Limit Calculator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <style>
 body {
     font-family: Arial, sans-serif;
@@ -23,27 +24,30 @@ h2 {
 }
 label {
     display: block;
-    margin-top: 10px;
+    margin-top: 12px;
     font-weight: bold;
+    font-size: 15px;
 }
 input, select {
-    padding: 8px;
+    padding: 10px;
     width: 100%;
-    margin-top: 5px;
+    margin-top: 6px;
     border: 1px solid #ccc;
-    border-radius: 5px;
+    border-radius: 6px;
     box-sizing: border-box;
+    font-size: 16px;
 }
 button {
     margin-top: 15px;
-    padding: 10px;
+    padding: 12px;
     width: 100%;
     background-color: #007bff;
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 6px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 17px;
+    min-height: 48px; /* ✅ touch-friendly */
 }
 button:hover {
     background-color: #0056b3;
@@ -71,10 +75,41 @@ button:hover {
     display: flex;
     justify-content: space-between;
     margin-bottom: 15px;
+    gap: 10px;
 }
 .top-buttons button {
-    width: 32%;
+    flex: 1;
     margin-top: 0;
+}
+
+/* ✅ Responsive adjustments */
+@media (max-width: 600px) {
+    body {
+        margin: 10px;
+    }
+    .container {
+        padding: 18px;
+    }
+    .top-buttons {
+        flex-direction: column;
+    }
+    .top-buttons button {
+        width: 100%;
+        font-size: 18px;
+        min-height: 52px;
+    }
+    input, select {
+        font-size: 18px;
+        padding: 12px;
+        min-height: 46px;
+    }
+    button {
+        font-size: 18px;
+        min-height: 52px;
+    }
+    label {
+        font-size: 16px;
+    }
 }
 </style>
 </head>
@@ -104,6 +139,7 @@ button:hover {
     <button type="button" onclick="calculate()">Check Limits</button>
     <div id="output" class="result"></div>
 </div>
+
 <script>
 function calculateRelativeAngle(windDir, aircraftHeading) {
     let angle = Math.abs(windDir - aircraftHeading);
@@ -210,4 +246,3 @@ function calculate() {
 </script>
 </body>
 </html>
-
